@@ -323,9 +323,11 @@ type WSM = StateT Out ScopeM
 --   public names in the old scope to match the new name and returns the
 --   renamings.
 copyScope :: C.QName -> A.ModuleName -> Scope -> ScopeM (Scope, (A.Ren A.ModuleName, A.Ren A.QName))
-copyScope cm new s = first (inScopeBecause $ Applied cm) <$> runStateT (copy new s) (Map.empty, Map.empty)
+copyScope oldc new s = first (inScopeBecause $ Applied oldc) <$> runStateT (copy new s) (Map.empty, Map.empty)
   where
     copy new s = do
+      lift $ reportSLn "scope.copy" 20 $ "Copying scope " ++ show old ++ " to " ++ show new
+      lift $ reportSLn "scope.copy" 50 $ show s
       s0 <- lift $ getNamedScope new
       s' <- mapScopeM copyD copyM s
       return $ s' { scopeName    = scopeName s0
@@ -375,6 +377,7 @@ copyScope cm new s = first (inScopeBecause $ Applied cm) <$> runStateT (copy new
         renName :: A.QName -> WSM A.QName
         renName x | not (isInOld $ A.qnameToList x) = return x
         renName x = do
+          lift $ reportSLn "scope.copy" 50 $ "  Copying " ++ show x
           -- Check if we've seen it already
           my <- findName x
           case my of

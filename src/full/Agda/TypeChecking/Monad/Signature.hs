@@ -213,8 +213,6 @@ applySection new ptel old ts rd rm = do
     , text "old  =" <+> text (show old)
     , text "ts   =" <+> text (show ts)
     ]
-  reportSLn "tc.mod.apply" 80 $ "sections:    " ++ show ss ++ "\n" ++
-                                "definitions: " ++ show ds
   reportSLn "tc.mod.apply" 80 $ render $ vcat
     [ text "arguments:  " <+> text (show ts)
     ]
@@ -330,6 +328,7 @@ applySection new ptel old ts rd rm = do
                         }
                   reportSLn "tc.mod.apply" 80 $ "new def for " ++ show x ++ "\n  " ++ show newDef
                   return newDef
+
             head = case oldDef of
                      Function{funProjection = Just Projection{ projDropPars = f}}
                        -> f
