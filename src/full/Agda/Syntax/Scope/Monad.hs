@@ -22,6 +22,7 @@ import Agda.Syntax.Common
 import Agda.Syntax.Position
 import Agda.Syntax.Fixity
 import Agda.Syntax.Abstract.Name as A
+import qualified Agda.Syntax.Abstract as A
 import Agda.Syntax.Concrete as C
 import Agda.Syntax.Scope.Base
 
@@ -315,14 +316,13 @@ stripNoNames = modifyScopes $ Map.map strip
     stripN m  = Map.filterWithKey (const . notNoName) m
     notNoName = not . isNoName
 
-type Ren a = Map a a
-type Out = (Ren A.ModuleName, Ren A.QName)
+type Out = (A.Ren A.ModuleName, A.Ren A.QName)
 type WSM = StateT Out ScopeM
 
 -- | Create a new scope with the given name from an old scope. Renames
 --   public names in the old scope to match the new name and returns the
 --   renamings.
-copyScope :: C.QName -> A.ModuleName -> Scope -> ScopeM (Scope, (Ren A.ModuleName, Ren A.QName))
+copyScope :: C.QName -> A.ModuleName -> Scope -> ScopeM (Scope, (A.Ren A.ModuleName, A.Ren A.QName))
 copyScope cm new s = first (inScopeBecause $ Applied cm) <$> runStateT (copy new s) (Map.empty, Map.empty)
   where
     copy new s = do

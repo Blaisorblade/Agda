@@ -576,10 +576,10 @@ checkModuleArity m tel args = check tel args
 -- | Check an application of a section (top-level function, includes @'traceCall'@).
 checkSectionApplication
   :: Info.ModuleInfo
-  -> ModuleName                 -- ^ Name @m1@ of module defined by the module macro.
-  -> A.ModuleApplication        -- ^ The module macro @λ tel → m2 args@.
-  -> Map QName QName            -- ^ Imported names (given as renaming).
-  -> Map ModuleName ModuleName  -- ^ Imported modules (given as renaming).
+  -> ModuleName          -- ^ Name @m1@ of module defined by the module macro.
+  -> A.ModuleApplication -- ^ The module macro @λ tel → m2 args@.
+  -> A.Ren QName         -- ^ Imported names (given as renaming).
+  -> A.Ren ModuleName    -- ^ Imported modules (given as renaming).
   -> TCM ()
 checkSectionApplication i m1 modapp rd rm =
   traceCall (CheckSectionApplication (getRange i) m1 modapp) $
@@ -588,10 +588,10 @@ checkSectionApplication i m1 modapp rd rm =
 -- | Check an application of a section.
 checkSectionApplication'
   :: Info.ModuleInfo
-  -> ModuleName                 -- ^ Name @m1@ of module defined by the module macro.
-  -> A.ModuleApplication        -- ^ The module macro @λ tel → m2 args@.
-  -> Map QName QName            -- ^ Imported names (given as renaming).
-  -> Map ModuleName ModuleName  -- ^ Imported modules (given as renaming).
+  -> ModuleName          -- ^ Name @m1@ of module defined by the module macro.
+  -> A.ModuleApplication -- ^ The module macro @λ tel → m2 args@.
+  -> A.Ren QName         -- ^ Imported names (given as renaming).
+  -> A.Ren ModuleName    -- ^ Imported modules (given as renaming).
   -> TCM ()
 checkSectionApplication' i m1 (A.SectionApp ptel m2 args) rd rm =
   -- Type-check the LHS (ptel) of the module macro.
