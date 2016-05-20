@@ -40,6 +40,7 @@ import Agda.Utils.Monad
 import Agda.Utils.Size
 import Agda.Utils.Permutation
 import Agda.Utils.Pretty
+import Agda.Utils.List
 import qualified Agda.Utils.HashMap as HMap
 
 #include "../../undefined.h"
@@ -202,10 +203,6 @@ applySection
   -> Ren ModuleName -- ^ Imported modules (given as renaming).
   -> TCM ()
 applySection new ptel old ts rd rm = do
-  sig  <- getSignature
-  isig <- getImportedSignature
-  let ss = getOld partOfOldM sigSections    [sig, isig]
-      ds = getOldH partOfOldD sigDefinitions [sig, isig]
   reportSLn "tc.mod.apply" 10 $ render $ vcat
     [ text "applySection"
     , text "new  =" <+> text (show new)
@@ -216,18 +213,10 @@ applySection new ptel old ts rd rm = do
   reportSLn "tc.mod.apply" 80 $ render $ vcat
     [ text "arguments:  " <+> text (show ts)
     ]
-  mapM_ (copyDef ts) ds
-  mapM_ (copySec ts) ss
+  mapM_ (copyDef ts) $ Map.toList rd
+  mapM_ (copySec ts) $ Map.toList rm
   mapM_ computePolarity (Map.elems rd)
   where
-    getOld partOfOld fromSig sigs =
-      Map.toList $ Map.filterKeys partOfOld $ Map.unions $ map fromSig sigs
-    getOldH partOfOld fromSig sigs =
-      HMap.toList $ HMap.filterWithKey (const . partOfOld) $ HMap.unions $ map fromSig sigs
-
-    partOfOldM x = x `isSubModuleOf` old
-    partOfOldD x = x `isInModule`    old
-
     -- Andreas, 2013-10-29
     -- Here, if the name x is not imported, it persists as
     -- old, possibly out-of-scope name.
@@ -238,12 +227,25 @@ applySection new ptel old ts rd rm = do
     -- produce out-of-scope constructors.
     copyName x = Map.findWithDefault x x rd
 
-    copyDef :: Args -> (QName, Definition) -> TCM ()
-    copyDef ts (x, d) =
-      case Map.lookup x rd of
-	Nothing -> return ()  -- if it's not in the renaming it was private and
-			      -- we won't need it
-	Just y	-> do
+    argsToUse x = do
+      let m = mnameFromList $ commonPrefix (mnameToList old) (mnameToList $ qnameModule x)
+      reportSLn "tc.mod.apply" 80 $ "Common prefix: " ++ show m
+      let ms = tail . map mnameFromList . inits . mnameToList $ m
+      ps <- sequence [ maybe 0 secFreeVars <$> getSection m | m <- ms ]
+      reportSLn "tc.mod.apply" 80 $ "  params: " ++ show (zip ms ps)
+      return $ sum ps
+
+    copyDef :: Args -> (QName, QName) -> TCM ()
+    copyDef ts (x, y) = do
+      def <- getConstInfo x
+      np  <- argsToUse x
+      copyDef' np def
+      where
+        copyDef' np d = do
+          reportSLn "tc.mod.apply" 80 $ "making new def for " ++ show y ++ " from " ++ show x ++ " with " ++ show np ++ " args"
+          reportSLn "tc.mod.apply" 80 $ "args = " ++ show ts' ++ "\n" ++
+                                        "old type = " ++ showTerm (unEl $ defType d) ++ "\n" ++
+                                        "new type = " ++ showTerm (unEl t)
 	  addConstant y =<< nd y
           makeProjection y
 	  -- Set display form for the old name if it's not a constructor.
@@ -259,10 +261,11 @@ applySection new ptel old ts rd rm = do
 	  unless (isCon || size ptel > 0) $ do
 	    addDisplayForms y
           where
-            t   = defType d `apply` ts
-            pol = defPolarity d `apply` ts
-            occ = defArgOccurrences d `apply` ts
-            rew = defRewriteRules d `apply` ts
+            ts' = take np ts
+            t   = defType d `apply` ts'
+            pol = defPolarity d `apply` ts'
+            occ = defArgOccurrences d `apply` ts'
+            rew = defRewriteRules d `apply` ts'
             inst = defInstance d
             -- the name is set by the addConstant function
             nd :: QName -> TCM Definition
@@ -296,16 +299,16 @@ applySection new ptel old ts rd rm = do
             def =
               case oldDef of
                 Constructor{ conPars = np, conData = d } -> return $
-                  oldDef { conPars = np - size ts
+                  oldDef { conPars = np - size ts'
                          , conData = copyName d
                          }
                 Datatype{ dataPars = np, dataCons = cs } -> return $
-                  oldDef { dataPars   = np - size ts
+                  oldDef { dataPars   = np - size ts'
                          , dataClause = Just cl
                          , dataCons   = map copyName cs
                          }
                 Record{ recPars = np, recConType = t, recTel = tel } -> return $
-                  oldDef { recPars    = np - size ts
+                  oldDef { recPars    = np - size ts'
                          , recClause  = Just cl
                          , recConType = apply t ts
                          , recTel     = apply tel ts
@@ -337,18 +340,17 @@ applySection new ptel old ts rd rm = do
                         , clauseTel       = EmptyTel
                         , clausePerm      = idP 0
                         , namedClausePats = []
-                        , clauseBody      = Body $ head `apply` ts
+                        , clauseBody      = Body $ head `apply` ts'
                         , clauseType      = Just $ defaultArg t
                         }
 
-    copySec :: Args -> (ModuleName, Section) -> TCM ()
-    copySec ts (x, sec) = case Map.lookup x rm of
-	Nothing -> return ()  -- if it's not in the renaming it was private and
-			      -- we won't need it
-	Just y  ->
-          addCtxTel (apply tel ts) $ addSection y 0
-      where
-	tel = secTelescope sec
+    copySec :: Args -> (ModuleName, ModuleName) -> TCM ()
+    copySec ts (x, y) = do
+      tel <- lookupSection x
+      let fv = size tel - size ts
+      reportSLn "tc.mod.apply" 80 $ "Copying section " ++ show x ++ " to " ++ show y
+      reportSLn "tc.mod.apply" 80 $ "  free variables: " ++ show fv
+      addCtxTel (apply tel ts) $ addSection y fv
 
 addDisplayForm :: QName -> DisplayForm -> TCM ()
 addDisplayForm x df = do

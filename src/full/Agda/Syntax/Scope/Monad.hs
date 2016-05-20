@@ -369,13 +369,8 @@ copyScope oldc new s = first (inScopeBecause $ Applied oldc) <$> runStateT (copy
         findName x = Map.lookup x <$> gets snd
         findMod  x = Map.lookup x <$> gets fst
 
-        isInOld qs = isPrefixOf (A.mnameToList old) qs
-
         -- Change a binding M.x -> old.M'.y to M.x -> new.M'.y
-        -- Ulf, 2013-11-06: We should run this also on the imported name space
-        -- (issue892), so make sure to only rename things with the prefix M.
         renName :: A.QName -> WSM A.QName
-        renName x | not (isInOld $ A.qnameToList x) = return x
         renName x = do
           lift $ reportSLn "scope.copy" 50 $ "  Copying " ++ show x
           -- Check if we've seen it already
@@ -390,11 +385,10 @@ copyScope oldc new s = first (inScopeBecause $ Applied oldc) <$> runStateT (copy
               addName x y
               return y
           where
-            dequalify = A.qnameFromList . drop (size old) . A.qnameToList
+            dequalify q = A.qnameFromList [last $ A.qnameToList q]
 
         -- Change a binding M.x -> old.M'.y to M.x -> new.M'.y
         renMod :: A.ModuleName -> WSM A.ModuleName
-        renMod x | not (isInOld $ A.mnameToList x) = return x
         renMod x = do
           -- Check if we've seen it already
           my <- findMod x
