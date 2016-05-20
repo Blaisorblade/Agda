@@ -260,42 +260,43 @@ applySection new ptel old ts rd rm = do
 
 	  unless (isCon || size ptel > 0) $ do
 	    addDisplayForms y
-      where
-	t   = defType d `apply` ts
-        pol = defPolarity d `apply` ts
-        occ = defArgOccurrences d `apply` ts
-        rew = defRewriteRules d `apply` ts
-        inst = defInstance d
-	-- the name is set by the addConstant function
-        nd :: QName -> TCM Definition
-	nd y = Defn (defArgInfo d) y t pol occ [] (-1) noCompiledRep rew inst <$> def  -- TODO: mutual block?
-        oldDef = theDef d
-	isCon  = case oldDef of { Constructor{} -> True ; _ -> False }
-        mutual = case oldDef of { Function{funMutual = m} -> m              ; _ -> [] }
-        extlam = case oldDef of { Function{funExtLam = e} -> e              ; _ -> Nothing }
-        with   = case oldDef of { Function{funWith = w}   -> copyName <$> w ; _ -> Nothing }
+          where
+            t   = defType d `apply` ts
+            pol = defPolarity d `apply` ts
+            occ = defArgOccurrences d `apply` ts
+            rew = defRewriteRules d `apply` ts
+            inst = defInstance d
+            -- the name is set by the addConstant function
+            nd :: QName -> TCM Definition
+            nd y = Defn (defArgInfo d) y t pol occ [] (-1) noCompiledRep rew inst <$> def  -- TODO: mutual block?
+            oldDef = theDef d
+            isCon  = case oldDef of { Constructor{} -> True ; _ -> False }
+            mutual = case oldDef of { Function{funMutual = m} -> m              ; _ -> [] }
+            extlam = case oldDef of { Function{funExtLam = e} -> e              ; _ -> Nothing }
+            with   = case oldDef of { Function{funWith = w}   -> copyName <$> w ; _ -> Nothing }
 {- THIS BREAKS A LOT OF THINGS:
-        -- Andreas, 2013-10-21:
-        -- Even if we apply the record argument, we stay a projection.
-        -- This is because we may abstract the record argument later again.
-        -- See succeed/ProjectionNotNormalized.agda
-        proj   = case oldDef of
-          Function{funProjection = Just p@Projection{projIndex = n}}
-            -> Just $ p { projIndex    = n - size ts
-                        , projDropPars = projDropPars p `apply` ts
-                        }
-          _ -> Nothing
+            -- Andreas, 2013-10-21:
+            -- Even if we apply the record argument, we stay a projection.
+            -- This is because we may abstract the record argument later again.
+            -- See succeed/ProjectionNotNormalized.agda
+            proj   = case oldDef of
+              Function{funProjection = Just p@Projection{projIndex = n}}
+                -> Just $ p { projIndex    = n - size ts
+                            , projDropPars = projDropPars p `apply` ts
+                            }
+              _ -> Nothing
 -}
-        -- NB (Andreas, 2013-10-19):
-        -- If we apply the record argument, we are no longer a projection!
-        proj   = case oldDef of
-          Function{funProjection = Just p@Projection{projIndex = n}} | size ts < n
-            -> Just $ p { projIndex    = n - size ts
-                        , projDropPars = projDropPars p `apply` ts
-                        }
-          _ -> Nothing
+            -- NB (Andreas, 2013-10-19):
+            -- If we apply the record argument, we are no longer a projection!
+            proj   = case oldDef of
+              Function{funProjection = Just p@Projection{projIndex = n}} | size ts < n
+                -> Just $ p { projIndex    = n - size ts
+                            , projDropPars = projDropPars p `apply` ts
+                            }
+              _ -> Nothing
 
-	def  = case oldDef of
+            def =
+              case oldDef of
                 Constructor{ conPars = np, conData = d } -> return $
                   oldDef { conPars = np - size ts
                          , conData = copyName d
@@ -311,7 +312,7 @@ applySection new ptel old ts rd rm = do
                          , recConType = apply t ts
                          , recTel     = apply tel ts
                          }
-		_ -> do
+                _ -> do
                   cc <- compileClauses Nothing [cl] -- Andreas, 2012-10-07 non need for record pattern translation
                   let newDef = Function
                         { funClauses        = [cl]
@@ -329,25 +330,17 @@ applySection new ptel old ts rd rm = do
                         }
                   reportSLn "tc.mod.apply" 80 $ "new def for " ++ show x ++ "\n  " ++ show newDef
                   return newDef
-{-
-        ts' | null ts   = []
-            | otherwise = case oldDef of
-                Function{funProjection = Just Projection{ projIndex = n}}
-                  | n == 0       -> __IMPOSSIBLE__
-                  | otherwise    -> drop (n - 1) ts
-                _ -> ts
--}
-        head = case oldDef of
-                 Function{funProjection = Just Projection{ projDropPars = f}}
-                   -> f
-                 _ -> Def x []
-	cl = Clause { clauseRange     = getRange $ defClauses d
-                    , clauseTel       = EmptyTel
-                    , clausePerm      = idP 0
-                    , namedClausePats = []
-                    , clauseBody      = Body $ head `apply` ts
-                    , clauseType      = Just $ defaultArg t
-                    }
+            head = case oldDef of
+                     Function{funProjection = Just Projection{ projDropPars = f}}
+                       -> f
+                     _ -> Def x []
+            cl = Clause { clauseRange     = getRange $ defClauses d
+                        , clauseTel       = EmptyTel
+                        , clausePerm      = idP 0
+                        , namedClausePats = []
+                        , clauseBody      = Body $ head `apply` ts
+                        , clauseType      = Just $ defaultArg t
+                        }
 
     copySec :: Args -> (ModuleName, Section) -> TCM ()
     copySec ts (x, sec) = case Map.lookup x rm of
