@@ -534,16 +534,22 @@ setMutual d m = modifySignature $ updateDefinition d $ updateTheDef $ \ def ->
 mutuallyRecursive :: QName -> QName -> TCM Bool
 mutuallyRecursive d d' = (d `elem`) <$> getMutual d'
 
+-- | Why Maybe? The reason is that we look up all prefixes of a module to
+--   compute number of parameters, and for hierarchical top-level modules,
+--   A.B.C say, A and A.B do not exist.
+getSection :: ModuleName -> TCM (Maybe Section)
+getSection m = do
+  sig  <- sigSections <$> getSignature
+  isig <- sigSections <$> getImportedSignature
+  return $ Map.lookup m sig <|> Map.lookup m isig
+
 -- | Look up the number of free variables of a section. This is equal to the
 --   number of parameters if we're currently inside the section and 0 otherwise.
 getSecFreeVars :: ModuleName -> TCM Nat
 getSecFreeVars m = do
-  sig  <- sigSections <$> getSignature
-  isig <- sigSections <$> getImportedSignature
   top <- currentModule
   case top `isSubModuleOf` m || top == m of
-    True  -> return $ maybe 0 secFreeVars $
-               Map.lookup m sig <|> Map.lookup m isig
+    True  -> maybe 0 secFreeVars <$> getSection m
     False -> return 0
 
 -- | Compute the number of free variables of a module. This is the sum of
