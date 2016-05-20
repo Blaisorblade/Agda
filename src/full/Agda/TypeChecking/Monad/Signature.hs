@@ -290,9 +290,9 @@ applySection new ptel old ts rd rm = do
             -- NB (Andreas, 2013-10-19):
             -- If we apply the record argument, we are no longer a projection!
             proj   = case oldDef of
-              Function{funProjection = Just p@Projection{projIndex = n}} | size ts < n
-                -> Just $ p { projIndex    = n - size ts
-                            , projDropPars = projDropPars p `apply` ts
+              Function{funProjection = Just p@Projection{projIndex = n}} | size ts' < n
+                -> Just $ p { projIndex    = n - size ts'
+                            , projDropPars = projDropPars p `apply` ts'
                             }
               _ -> Nothing
 
