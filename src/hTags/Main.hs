@@ -9,6 +9,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Trans
 import Data.Char
+import qualified Data.Traversable as T
 import Data.List
 import Data.Maybe
 import System.Environment
@@ -122,7 +123,7 @@ cabalConfToOpts desc = langOpts ++ extOpts
 main :: IO ()
 main = do
   opts <- getOptions
-  pkgDesc <- mapM (readPackageDescription minBound) $ optCabalPath opts
+  pkgDesc <- T.mapM (readPackageDescription minBound) $ optCabalPath opts
   let go | optHelp opts = do
             printUsage stdout
             exitSuccess
