@@ -106,7 +106,7 @@ extractLangSettings gpd =
     (defaultExtensions &&& defaultLanguage) . libBuildInfo <$> (library . configurePackageDescription) gpd
 
 extToOpt :: Extension -> String
-extToOpt (UnknownExtension e) = "-X" ++ show e
+extToOpt (UnknownExtension e) = "-X" ++ e
 extToOpt (EnableExtension e)  = "-X" ++ show e
 extToOpt (DisableExtension e) = "-XNo" ++ show e
 
