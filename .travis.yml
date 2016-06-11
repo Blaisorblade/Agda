@@ -174,7 +174,7 @@ install:
     fi
 
 ##############################################################################
-# Installing the dependencies and latest versions of Alex and Happy
+# Installing the dependencies
 
 # N.B. that `cabal install` doesn't set up the number of jobs by default
 # (cabal-install 1.22.4.0). See https://github.com/haskell/cabal/issues/2628.
