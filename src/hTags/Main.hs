@@ -29,7 +29,7 @@ import ErrUtils
 import StringBuffer
 import SrcLoc
 import Outputable
-import DynFlags (opt_P, sOpt_P)
+import DynFlags (opt_P, sOpt_P, ExtensionFlag (..), xopt_set)
 import GhcMonad (GhcT(..), Ghc(..))
 
 import Tags
@@ -83,6 +83,24 @@ runCmd cmd = do
   (_, h, _, _) <- runInteractiveCommand cmd
   hGetContents h
 
+progExtensionFlags :: [ExtensionFlag]
+progExtensionFlags =
+  [ Opt_ConstraintKinds
+  , Opt_DataKinds
+  , Opt_DefaultSignatures
+  , Opt_ExistentialQuantification
+  , Opt_FlexibleContexts
+  , Opt_FlexibleInstances
+  , Opt_FunctionalDependencies
+  , Opt_LambdaCase
+  , Opt_MultiParamTypeClasses
+  , Opt_RecordPuns -- NamedFieldPuns is irregular.
+  , Opt_RankNTypes
+  , Opt_RecordWildCards
+  , Opt_StandaloneDeriving
+  , Opt_TupleSections
+  , Opt_TypeSynonymInstances]
+
 main :: IO ()
 main = do
   opts <- getOptions
@@ -93,14 +111,16 @@ main = do
             top : _ <- lines <$> runCmd "ghc --print-libdir"
             ts <- runGhc (Just top) $ do
               dynFlags <- getSessionDynFlags
-              setSessionDynFlags $
-                dynFlags {
-                  settings = (settings dynFlags) {
-                    sOpt_P = concatMap (\i -> [i, "-include"]) (optIncludes opts) ++
-                             opt_P dynFlags
-                    },
-                  includePaths = optIncludePath opts ++ includePaths dynFlags
-                  }
+              let dynFlags' =
+                    dynFlags {
+                    settings = (settings dynFlags) {
+                        sOpt_P = concatMap (\i -> [i, "-include"]) (optIncludes opts) ++
+                                 opt_P dynFlags
+                        }
+                    , includePaths = optIncludePath opts ++ includePaths dynFlags
+                    }
+              let dynFlags'' = foldl xopt_set dynFlags' progExtensionFlags
+              setSessionDynFlags dynFlags''
               mapM (\f -> liftM2 ((,,) f) (liftIO $ Strict.readFile f)
                                           (goFile f)) $
                          optFiles opts
