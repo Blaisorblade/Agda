@@ -385,14 +385,3 @@ script:
   - if [[ $TEST = "doc" ]]; then
        make doc;
     fi
-
-##############################################################################
-# Every master and maintenance branches >= 2.5 or >= maint-2.4 must
-# be here. You can also add your private branches if you want travis to
-# test them.
-
-branches:
-  only:
-    - master
-    - maint-2.4
-    - stable-2.5
