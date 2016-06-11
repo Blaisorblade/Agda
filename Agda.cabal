@@ -548,12 +548,16 @@ library
                     , FunctionalDependencies
                     , LambdaCase
                     , MultiParamTypeClasses
+                    --Internally, RecordPuns:
                     , NamedFieldPuns
                     , RankNTypes
                     , RecordWildCards
                     , StandaloneDeriving
                     , TupleSections
                     , TypeSynonymInstances
+                 --Implied extensions:
+                 -- , DisambiguateRecordFields
+                 -- , ExplicitForAll
 
 executable agda
   hs-source-dirs: src/main
