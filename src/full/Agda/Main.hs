@@ -165,7 +165,7 @@ printUsage = do
 -- | Print version information.
 printVersion :: IO ()
 printVersion =
-  putStrLn $ "Agda version " ++ version
+  putStrLn $ "Agda version " ++ fullVersion
 
 -- | What to do for bad options.
 optionError :: String -> IO ()
