@@ -790,7 +790,7 @@ parsePluginOptions argv opts =
 usage :: [OptDescr ()] -> String -> String
 usage options progName = usageInfo (header progName) options
     where
-        header progName = unlines [ "Agda version " ++ version, ""
+        header progName = unlines [ "Agda version " ++ fullVersion, ""
                                   , "Usage: " ++ progName ++ " [OPTIONS...] [FILE]" ]
 
 -- Remove +RTS .. -RTS from arguments
