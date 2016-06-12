@@ -155,7 +155,6 @@ library
                 , transformers >= 0.3 && < 0.4 || >= 0.4.1.0 && < 0.6
                 , transformers-compat >= 0.3.3.3 && < 0.6
                 , unordered-containers >= 0.2.5.0 && < 0.3
-                , vcs-revision == 0.0.2
                 , xhtml >= 3000.2.1 && < 3000.3
 
   if impl(ghc < 7.8)
@@ -438,6 +437,7 @@ library
                     Agda.Utils.Functor
                     Agda.Utils.Function
                     Agda.Utils.Geniplate
+                    Agda.Utils.GitRevision
                     Agda.Utils.Graph.AdjacencyMap.Unidirectional
                     Agda.Utils.Graph.AdjacencyMap.Unidirectional.Tests
                     Agda.Utils.Hash

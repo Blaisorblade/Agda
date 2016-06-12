@@ -5,7 +5,7 @@ import Data.Maybe (maybe)
 import Data.Version
 import Data.List
 
-import Distribution.VcsRevision.Git
+import Agda.Utils.GitRevision
 import Language.Haskell.TH.Syntax
 import qualified Paths_Agda as PA
 
@@ -13,13 +13,19 @@ import qualified Paths_Agda as PA
 
 gitVersion :: Maybe String
 gitVersion = $(do
-  v <- qRunIO getRevision
-  lift $ case v of
-    Nothing           -> Nothing
-    Just (hash,True)  -> Just $ hash ++ " (with local modifications)"
-    Just (hash,False) -> Just $ hash)
+  v <- qRunIO gitDescribe
+  lift $ v)
 
 version :: String
 version = (intercalate "." $ map show $
-            versionBranch PA.version) ++
-          maybe "" (". Git commit: " ++) gitVersion
+            versionBranch PA.version)
+
+fullVersion :: String
+fullVersion =
+  case gitVersion of
+    Nothing -> version
+    Just ver ->
+      if version `isPrefixOf` ver then
+        ver
+      else
+        version ++ ". Git version: " ++ ver
