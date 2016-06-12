@@ -7,6 +7,3 @@ packages:
 - src/hTags/
 - src/size-solver/
 #- test/ #Dead
-
-extra-deps:
-- vcs-revision-0.0.2
